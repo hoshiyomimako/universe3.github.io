@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メールマガジン テキスト整形ツール</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .input-section, .output-section {
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        textarea, .output-box {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        textarea {
+            min-height: 200px;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .output-box {
+            min-height: 200px;
+            background: #f9f9f9;
+            overflow-x: auto;
+        }
+
+        .output-box pre {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-format {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-format:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-copy {
+            background: #4caf50;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-copy:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-clear {
+            background: #f44336;
+            color: white;
+            padding: 12px 24px;
+        }
+
+        .btn-clear:hover {
+            background: #da190b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+        }
+
+        .settings {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .settings label {
+            display: inline-block;
+            margin-right: 10px;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .settings input[type="number"] {
+            width: 80px;
+            padding: 5px 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .message {
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 14px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .message.show {
+            opacity: 1;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .preview {
+            margin-top: 20px;
+            padding: 20px;
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+
+        .preview h3 {
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📧 メールマガジン テキスト整形ツール</h1>
+        <p class="subtitle">テキストを30文字前後で意味が切れないように改行し、HTML形式で出力します</p>
+
+        <div class="settings">
+            <label for="lineLength">
+                改行文字数:
+                <input type="number" id="lineLength" value="30" min="20" max="60" step="5">
+            </label>
+            <small style="color: #666;">（目安となる文字数を設定できます）</small>
+        </div>
+
+        <div class="input-section">
+            <label for="inputText">📝 入力テキスト</label>
+            <textarea id="inputText" placeholder="ここにメールマガジンのテキストを入力してください..."></textarea>
+        </div>
+
+        <div class="buttons">
+            <button class="btn-format" onclick="formatText()">✨ 整形する</button>
+            <button class="btn-copy" onclick="copyToClipboard()">📋 コピー</button>
+            <button class="btn-clear" onclick="clearAll()">🗑️ クリア</button>
+        </div>
+
+        <div class="output-section">
+            <label>💻 HTMLコード</label>
+            <div class="output-box">
+                <pre id="outputCode"></pre>
+            </div>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <div class="preview" id="preview" style="display: none;">
+            <h3>👀 プレビュー</h3>
+            <div id="previewContent"></div>
+        </div>
+    </div>
+
+    <script>
+        function formatText() {
+            const input = document.getElementById('inputText').value.trim();
+            const lineLength = parseInt(document.getElementById('lineLength').value) || 30;
+
+            if (!input) {
+                showMessage('テキストを入力してください', 'error');
+                return;
+            }
+
+            // 段落ごとに分割（空行で分割）
+            const paragraphs = input.split(/\n\n+/);
+
+            const formattedParagraphs = paragraphs.map(para => {
+                // 段落内の改行を削除
+                const cleanPara = para.replace(/\n/g, '');
+
+                if (!cleanPara) return '';
+
+                // 改行を挿入
+                const lines = splitIntoLines(cleanPara, lineLength);
+
+                // HTMLタグで囲む
+                const htmlLines = lines.join('<br>\n');
+                return `<p>${htmlLines}</p>`;
+            }).filter(p => p);
+
+            const output = formattedParagraphs.join('\n\n');
+
+            // 出力
+            document.getElementById('outputCode').textContent = output;
+
+            // プレビュー
+            document.getElementById('previewContent').innerHTML = output;
+            document.getElementById('preview').style.display = 'block';
+
+            showMessage('整形が完了しました！', 'success');
+        }
+
+        function splitIntoLines(text, targetLength) {
+            const lines = [];
+            let currentLine = '';
+            let i = 0;
+
+            while (i < text.length) {
+                currentLine += text[i];
+
+                // 現在の行の長さをチェック
+                if (currentLine.length >= targetLength - 5) {
+                    // 適切な区切り位置を探す
+                    let breakPoint = findBreakPoint(currentLine, targetLength);
+
+                    if (breakPoint > 0) {
+                        lines.push(currentLine.substring(0, breakPoint));
+                        // 残りの文字を次の行に
+                        const remaining = currentLine.substring(breakPoint);
+                        currentLine = remaining;
+                        i++;
+                        continue;
+                    }
+                }
+
+                i++;
+            }
+
+            if (currentLine) {
+                lines.push(currentLine);
+            }
+
+            return lines;
+        }
+
+        function findBreakPoint(line, targetLength) {
+            // 目標文字数付近で改行に適した位置を探す
+            const minLength = targetLength - 5;
+            const maxLength = targetLength + 5;
+
+            // 最適な改行位置（句読点、区切り文字など）
+            const breakChars = ['。', '、', '！', '？', '）', '」', '』', '】', 'ー', 'の', 'を', 'に', 'は', 'が', 'で', 'と', 'や', 'も', 'から', 'まで', 'ので', 'ため'];
+
+            // 目標文字数付近で最適な区切り位置を探す
+            for (let i = Math.min(maxLength, line.length); i >= minLength; i--) {
+                const char = line[i - 1];
+
+                // 句読点で区切る
+                if (breakChars.includes(char)) {
+                    return i;
+                }
+            }
+
+            // 助詞や接続詞の後で区切る（部分一致）
+            for (let i = Math.min(maxLength, line.length); i >= minLength; i--) {
+                const substr2 = line.substring(i - 2, i);
+                const substr3 = line.substring(i - 3, i);
+
+                if (['ので', 'から', 'まで', 'ため', 'けど', 'でも', 'して', 'れば'].includes(substr2)) {
+                    return i;
+                }
+                if (['ながら', 'として', 'により', 'による'].includes(substr3)) {
+                    return i;
+                }
+            }
+
+            // スペースで区切る
+            for (let i = Math.min(maxLength, line.length); i >= minLength; i--) {
+                if (line[i - 1] === ' ' || line[i - 1] === '　') {
+                    return i;
+                }
+            }
+
+            // 適切な位置が見つからない場合は目標文字数で区切る
+            return Math.min(targetLength, line.length);
+        }
+
+        function copyToClipboard() {
+            const output = document.getElementById('outputCode').textContent;
+
+            if (!output) {
+                showMessage('コピーする内容がありません', 'error');
+                return;
+            }
+
+            navigator.clipboard.writeText(output).then(() => {
+                showMessage('クリップボードにコピーしました！', 'success');
+            }).catch(err => {
+                showMessage('コピーに失敗しました', 'error');
+            });
+        }
+
+        function clearAll() {
+            document.getElementById('inputText').value = '';
+            document.getElementById('outputCode').textContent = '';
+            document.getElementById('preview').style.display = 'none';
+            showMessage('クリアしました', 'success');
+        }
+
+        function showMessage(text, type) {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = `message ${type} show`;
+
+            setTimeout(() => {
+                messageEl.classList.remove('show');
+            }, 3000);
+        }
+
+        // サンプルテキストをロード（開発用）
+        window.addEventListener('DOMContentLoaded', () => {
+            const sample = `このテキストはメルマガ用ですので、一文が長すぎて意味が切れないように注意しながら改行してください。また、読者が読みやすいように工夫することも大切です。
+
+メールマガジンの配信では、テキストの見やすさが非常に重要になります。適切な改行を入れることで、読みやすさが格段に向上します。`;
+
+            // サンプルは入力しない（ユーザーが使いやすいように）
+            // document.getElementById('inputText').value = sample;
+        });
+    </script>
+</body>
+</html>
