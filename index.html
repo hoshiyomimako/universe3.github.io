@@ -619,116 +619,117 @@
 
         function splitIntoLines(text, targetLength) {
             const lines = [];
-
-            // テキストを適切なトークンに分割
-            const tokens = tokenizeText(text);
-
             let currentLine = '';
+            let i = 0;
 
-            for (let i = 0; i < tokens.length; i++) {
-                const token = tokens[i];
-                const testLine = currentLine + token;
+            while (i < text.length) {
+                const char = text[i];
+                currentLine += char;
 
-                // 目標文字数を大幅に超える場合
-                if (testLine.length > targetLength + 10) {
-                    // 現在の行が空でない場合は確定
-                    if (currentLine) {
-                        lines.push(currentLine.trim());
-                        currentLine = token;
-                    } else {
-                        // トークン自体が長すぎる場合はそのまま追加
-                        lines.push(token.trim());
+                // 現在の位置が良い区切り位置かチェック
+                const isBreakPoint = isGoodBreakPoint(currentLine);
+                const nextIsSpace = (i + 1 < text.length && (text[i + 1] === ' ' || text[i + 1] === '　'));
+
+                // 目標文字数に達した場合
+                if (currentLine.length >= targetLength - 10) {
+                    // 良い区切り位置なら改行
+                    if (isBreakPoint) {
+                        lines.push(currentLine);
                         currentLine = '';
                     }
-                } else if (testLine.length >= targetLength - 5) {
-                    // 目標文字数付近の場合、適切な区切りかチェック
-                    if (isGoodBreakPoint(token)) {
-                        // 良い区切り位置なら行を確定
-                        lines.push(testLine.trim());
-                        currentLine = '';
-                    } else {
-                        // まだ追加できる
-                        currentLine = testLine;
+                    // 目標文字数を超過した場合は強制的に改行
+                    else if (currentLine.length > targetLength + 10) {
+                        // 前の良い区切り位置を探す
+                        const breakPos = findLastBreakPoint(currentLine, targetLength);
+                        if (breakPos > 0 && breakPos < currentLine.length) {
+                            lines.push(currentLine.substring(0, breakPos));
+                            currentLine = currentLine.substring(breakPos);
+                        } else {
+                            // 見つからない場合は現在位置で区切る
+                            lines.push(currentLine);
+                            currentLine = '';
+                        }
                     }
-                } else {
-                    // まだ余裕がある
-                    currentLine = testLine;
                 }
+
+                i++;
             }
 
             // 残りを追加
             if (currentLine.trim()) {
-                lines.push(currentLine.trim());
+                lines.push(currentLine);
             }
 
             return lines;
         }
 
-        function tokenizeText(text) {
-            // テキストを適切な単位に分割
-            const tokens = [];
-            let current = '';
+        function isGoodBreakPoint(text) {
+            // テキストの最後が改行に適した位置か判定
+            if (!text || text.length === 0) return false;
 
-            for (let i = 0; i < text.length; i++) {
-                const char = text[i];
-                current += char;
+            const trimmed = text.trimEnd();
+            if (trimmed.length === 0) return false;
 
-                // 区切り文字の後で分割
-                if (isBreakChar(char)) {
-                    tokens.push(current);
-                    current = '';
-                }
-            }
-
-            if (current) {
-                tokens.push(current);
-            }
-
-            return tokens;
-        }
-
-        function isBreakChar(char) {
-            // 改行に適した文字
-            const breakChars = ['。', '、', '！', '？', '）', '」', '』', '】', '；', '：'];
-            return breakChars.includes(char);
-        }
-
-        function isGoodBreakPoint(token) {
-            // 最後の文字が区切りに適しているか
-            if (!token) return false;
-
-            const lastChar = token[token.length - 1];
+            const lastChar = trimmed[trimmed.length - 1];
 
             // 句読点で終わる
-            if (isBreakChar(lastChar)) {
+            const punctuation = ['。', '、', '！', '？', '；', '：', '…'];
+            if (punctuation.includes(lastChar)) {
                 return true;
             }
 
-            // 助詞で終わる
-            const participles = ['の', 'を', 'に', 'は', 'が', 'で', 'と', 'や', 'も', 'ね', 'よ', 'さ', 'わ'];
-            if (participles.includes(lastChar)) {
+            // 括弧で終わる
+            const brackets = ['）', '】', '』', '」', '〉', '》', '〕'];
+            if (brackets.includes(lastChar)) {
                 return true;
             }
 
-            // 2文字助詞
-            if (token.length >= 2) {
-                const last2 = token.substring(token.length - 2);
-                const particles2 = ['から', 'まで', 'ので', 'ため', 'けど', 'でも', 'して', 'れば', 'など', 'だけ', 'ほど'];
+            // 助詞で終わる（1文字）
+            const particles1 = ['の', 'を', 'に', 'は', 'が', 'で', 'と', 'や', 'も', 'へ', 'か', 'ね', 'よ', 'わ', 'さ'];
+            if (particles1.includes(lastChar)) {
+                return true;
+            }
+
+            // 2文字以上の助詞・接続詞
+            if (trimmed.length >= 2) {
+                const last2 = trimmed.substring(trimmed.length - 2);
+                const particles2 = ['から', 'まで', 'ので', 'のに', 'ため', 'けど', 'けれど', 'でも', 'だが', 'して', 'しつつ', 'れば', 'なら', 'たら', 'ても', 'など', 'だけ', 'ほど', 'ばかり', 'くらい', 'ぐらい'];
                 if (particles2.includes(last2)) {
                     return true;
                 }
             }
 
-            // 3文字助詞
-            if (token.length >= 3) {
-                const last3 = token.substring(token.length - 3);
-                const particles3 = ['ながら', 'として', 'により', 'による', 'くらい'];
+            if (trimmed.length >= 3) {
+                const last3 = trimmed.substring(trimmed.length - 3);
+                const particles3 = ['ながら', 'として', 'により', 'による', 'として', 'たって', 'にとって', 'について'];
                 if (particles3.includes(last3)) {
                     return true;
                 }
             }
 
+            if (trimmed.length >= 4) {
+                const last4 = trimmed.substring(trimmed.length - 4);
+                const particles4 = ['について', 'にとって', 'によって', 'に対して'];
+                if (particles4.includes(last4)) {
+                    return true;
+                }
+            }
+
             return false;
+        }
+
+        function findLastBreakPoint(text, targetLength) {
+            // テキスト内で最後の良い区切り位置を探す
+            // 目標文字数付近から後方検索
+            for (let i = Math.min(targetLength, text.length); i > targetLength / 2; i--) {
+                const substring = text.substring(0, i);
+                if (isGoodBreakPoint(substring)) {
+                    return i;
+                }
+            }
+
+            // 見つからない場合は目標文字数を返す
+            return Math.min(targetLength, text.length);
         }
 
         function copyToClipboard(tabId) {
