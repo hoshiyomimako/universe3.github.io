@@ -574,8 +574,8 @@
             const formattedParagraphs = paragraphs.map(para => {
                 // 表形式かチェック
                 if (isTable(para)) {
-                    // 表はそのまま保持（preタグで囲む）
-                    return `<pre>${para}</pre>`;
+                    // Markdown表をHTMLテーブルに変換
+                    return convertMarkdownTableToHTML(para, lineLength);
                 }
 
                 // 段落内の改行を削除
@@ -615,6 +615,92 @@
             }
 
             return false;
+        }
+
+        function convertMarkdownTableToHTML(tableText, lineLength) {
+            const lines = tableText.split('\n').filter(line => line.trim());
+
+            if (lines.length < 2) {
+                return `<pre>${tableText}</pre>`;
+            }
+
+            // Markdownテーブルをパース
+            const rows = [];
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+
+                // 区切り行をスキップ (例: | :--- | :--- |)
+                if (line.match(/^[\|\s:]+[-:]+[\|\s:]+$/)) {
+                    continue;
+                }
+
+                // パイプで分割
+                const cells = line.split('|')
+                    .map(cell => cell.trim())
+                    .filter((cell, index, arr) => {
+                        // 最初と最後の空セルを除外
+                        if (index === 0 || index === arr.length - 1) {
+                            return cell !== '';
+                        }
+                        return true;
+                    });
+
+                if (cells.length > 0) {
+                    rows.push(cells);
+                }
+            }
+
+            if (rows.length === 0) {
+                return `<pre>${tableText}</pre>`;
+            }
+
+            // HTMLテーブルを生成
+            let html = '';
+
+            // ヘッダー行をスキップして、データ行のみを処理
+            const startIndex = rows.length > 1 && rows[0].length === rows[1].length ? 1 : 0;
+
+            for (let i = startIndex; i < rows.length; i++) {
+                const row = rows[i];
+                html += '            <tr>\n';
+
+                for (let j = 0; j < row.length; j++) {
+                    const cellContent = formatCellContent(row[j], lineLength);
+                    html += `                <td>${cellContent}</td>\n`;
+                }
+
+                html += '            </tr>';
+
+                if (i < rows.length - 1) {
+                    html += '\n';
+                }
+            }
+
+            return html;
+        }
+
+        function formatCellContent(text, lineLength) {
+            // セル内の改行を保持しつつMarkdown記法をHTMLに変換
+            let formatted = text;
+
+            // 改行で分割して各行を処理
+            const lines = formatted.split(/\n/);
+            const processedLines = lines.map(line => {
+                let processed = line.trim();
+
+                // 太字: **text** -> <strong>text</strong>
+                processed = processed.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+                // 斜体（単一アスタリスクだが太字でない部分）
+                // 太字の後に残った単一アスタリスクのみ処理
+                processed = processed.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+
+                return processed;
+            });
+
+            // 改行を<br>に変換
+            return processedLines.join('<br>\n                ');
         }
 
         function splitIntoLines(text, targetLength) {
