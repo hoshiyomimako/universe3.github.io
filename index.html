@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>メールマガジン テキスト整形ツール</title>
+    <title>メールマガジン テキスト整形ツール（並列処理対応）</title>
     <style>
         * {
             margin: 0;
@@ -16,17 +16,15 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
         }
 
         .container {
             background: white;
             border-radius: 16px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 900px;
+            max-width: 1200px;
             width: 100%;
+            margin: 0 auto;
             padding: 40px;
         }
 
@@ -40,6 +38,155 @@
             color: #666;
             margin-bottom: 30px;
             font-size: 14px;
+        }
+
+        .settings {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .settings label {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .settings input[type="number"] {
+            width: 80px;
+            padding: 5px 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .top-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn-add-tab {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-add-tab:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-format-all {
+            background: #ff9800;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-format-all:hover {
+            background: #f57c00;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+        }
+
+        .btn-export-all {
+            background: #2196f3;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-export-all:hover {
+            background: #1976d2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+        }
+
+        .tabs-container {
+            margin-bottom: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            border-bottom: 2px solid #e0e0e0;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: #f5f5f5;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            color: #666;
+            transition: all 0.3s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab:hover {
+            background: #e0e0e0;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .tab-close {
+            margin-left: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+
+        .tab-close:hover {
+            opacity: 1;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .input-section, .output-section {
@@ -131,35 +278,12 @@
         .btn-clear {
             background: #f44336;
             color: white;
-            padding: 12px 24px;
         }
 
         .btn-clear:hover {
             background: #da190b;
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
-        }
-
-        .settings {
-            background: #f5f5f5;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        .settings label {
-            display: inline-block;
-            margin-right: 10px;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
-
-        .settings input[type="number"] {
-            width: 80px;
-            padding: 5px 10px;
-            border: 2px solid #e0e0e0;
-            border-radius: 4px;
-            font-size: 14px;
         }
 
         .message {
@@ -181,6 +305,11 @@
             color: #155724;
         }
 
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
         .preview {
             margin-top: 20px;
             padding: 20px;
@@ -194,12 +323,37 @@
             margin-bottom: 15px;
             font-size: 16px;
         }
+
+        .stats {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #1565c0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            width: 0%;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📧 メールマガジン テキスト整形ツール</h1>
-        <p class="subtitle">テキストを30文字前後で意味が切れないように改行し、HTML形式で出力します</p>
+        <h1>📧 メールマガジン テキスト整形ツール（並列処理対応）</h1>
+        <p class="subtitle">複数のテキストを同時に整形できます。30文字前後で意味が切れないように改行し、HTML形式で出力します</p>
 
         <div class="settings">
             <label for="lineLength">
@@ -209,35 +363,135 @@
             <small style="color: #666;">（目安となる文字数を設定できます）</small>
         </div>
 
-        <div class="input-section">
-            <label for="inputText">📝 入力テキスト</label>
-            <textarea id="inputText" placeholder="ここにメールマガジンのテキストを入力してください..."></textarea>
+        <div class="top-buttons">
+            <button class="btn-add-tab" onclick="addTab()">➕ テキスト追加</button>
+            <button class="btn-format-all" onclick="formatAllTexts()">⚡ 全て整形</button>
+            <button class="btn-export-all" onclick="exportAll()">📥 全てエクスポート</button>
         </div>
 
-        <div class="buttons">
-            <button class="btn-format" onclick="formatText()">✨ 整形する</button>
-            <button class="btn-copy" onclick="copyToClipboard()">📋 コピー</button>
-            <button class="btn-clear" onclick="clearAll()">🗑️ クリア</button>
+        <div class="progress-bar">
+            <div class="progress-bar-fill" id="progressBar"></div>
         </div>
 
-        <div class="output-section">
-            <label>💻 HTMLコード</label>
-            <div class="output-box">
-                <pre id="outputCode"></pre>
-            </div>
+        <div class="tabs-container">
+            <div class="tabs" id="tabs"></div>
         </div>
+
+        <div id="tabContents"></div>
 
         <div id="message" class="message"></div>
 
-        <div class="preview" id="preview" style="display: none;">
-            <h3>👀 プレビュー</h3>
-            <div id="previewContent"></div>
+        <div class="stats" id="stats" style="display: none;">
+            <strong>処理統計:</strong> <span id="statsContent"></span>
         </div>
     </div>
 
     <script>
-        function formatText() {
-            const input = document.getElementById('inputText').value.trim();
+        let tabCounter = 0;
+        let activeTabId = null;
+        const tabs = [];
+
+        // 初期化
+        window.addEventListener('DOMContentLoaded', () => {
+            addTab(); // 最初のタブを追加
+        });
+
+        function addTab() {
+            tabCounter++;
+            const tabId = `tab-${tabCounter}`;
+
+            const tabData = {
+                id: tabId,
+                name: `テキスト ${tabCounter}`,
+                input: '',
+                output: '',
+                formatted: false
+            };
+
+            tabs.push(tabData);
+
+            // タブボタンを追加
+            const tabsContainer = document.getElementById('tabs');
+            const tabButton = document.createElement('button');
+            tabButton.className = 'tab';
+            tabButton.id = `btn-${tabId}`;
+            tabButton.innerHTML = `
+                ${tabData.name}
+                ${tabs.length > 1 ? `<span class="tab-close" onclick="event.stopPropagation(); removeTab('${tabId}')">×</span>` : ''}
+            `;
+            tabButton.onclick = () => switchTab(tabId);
+            tabsContainer.appendChild(tabButton);
+
+            // タブコンテンツを追加
+            const tabContents = document.getElementById('tabContents');
+            const content = document.createElement('div');
+            content.className = 'tab-content';
+            content.id = tabId;
+            content.innerHTML = `
+                <div class="input-section">
+                    <label>📝 入力テキスト</label>
+                    <textarea id="input-${tabId}" placeholder="ここにメールマガジンのテキストを入力してください..."></textarea>
+                </div>
+
+                <div class="buttons">
+                    <button class="btn-format" onclick="formatText('${tabId}')">✨ 整形する</button>
+                    <button class="btn-copy" onclick="copyToClipboard('${tabId}')">📋 コピー</button>
+                    <button class="btn-clear" onclick="clearTab('${tabId}')">🗑️ クリア</button>
+                </div>
+
+                <div class="output-section">
+                    <label>💻 HTMLコード</label>
+                    <div class="output-box">
+                        <pre id="output-${tabId}"></pre>
+                    </div>
+                </div>
+
+                <div class="preview" id="preview-${tabId}" style="display: none;">
+                    <h3>👀 プレビュー</h3>
+                    <div id="preview-content-${tabId}"></div>
+                </div>
+            `;
+            tabContents.appendChild(content);
+
+            switchTab(tabId);
+        }
+
+        function switchTab(tabId) {
+            // すべてのタブとコンテンツを非アクティブに
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            // 指定されたタブをアクティブに
+            document.getElementById(`btn-${tabId}`).classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+
+            activeTabId = tabId;
+        }
+
+        function removeTab(tabId) {
+            if (tabs.length <= 1) {
+                showMessage('最低1つのタブが必要です', 'error');
+                return;
+            }
+
+            // タブデータを削除
+            const index = tabs.findIndex(t => t.id === tabId);
+            if (index > -1) {
+                tabs.splice(index, 1);
+            }
+
+            // タブボタンとコンテンツを削除
+            document.getElementById(`btn-${tabId}`).remove();
+            document.getElementById(tabId).remove();
+
+            // 別のタブをアクティブに
+            if (activeTabId === tabId) {
+                switchTab(tabs[0].id);
+            }
+        }
+
+        function formatText(tabId) {
+            const input = document.getElementById(`input-${tabId}`).value.trim();
             const lineLength = parseInt(document.getElementById('lineLength').value) || 30;
 
             if (!input) {
@@ -245,6 +499,75 @@
                 return;
             }
 
+            const output = processText(input, lineLength);
+
+            // 出力
+            document.getElementById(`output-${tabId}`).textContent = output;
+
+            // プレビュー
+            document.getElementById(`preview-content-${tabId}`).innerHTML = output;
+            document.getElementById(`preview-${tabId}`).style.display = 'block';
+
+            // タブデータを更新
+            const tab = tabs.find(t => t.id === tabId);
+            if (tab) {
+                tab.input = input;
+                tab.output = output;
+                tab.formatted = true;
+            }
+
+            showMessage('整形が完了しました！', 'success');
+        }
+
+        function formatAllTexts() {
+            const lineLength = parseInt(document.getElementById('lineLength').value) || 30;
+            let processedCount = 0;
+            let totalTabs = tabs.length;
+
+            // プログレスバーをリセット
+            const progressBar = document.getElementById('progressBar');
+            progressBar.style.width = '0%';
+
+            // 全てのテキストを処理
+            tabs.forEach((tab, index) => {
+                setTimeout(() => {
+                    const input = document.getElementById(`input-${tab.id}`).value.trim();
+
+                    if (input) {
+                        const output = processText(input, lineLength);
+
+                        // 出力
+                        document.getElementById(`output-${tab.id}`).textContent = output;
+
+                        // プレビュー
+                        document.getElementById(`preview-content-${tab.id}`).innerHTML = output;
+                        document.getElementById(`preview-${tab.id}`).style.display = 'block';
+
+                        // タブデータを更新
+                        tab.input = input;
+                        tab.output = output;
+                        tab.formatted = true;
+
+                        processedCount++;
+                    }
+
+                    // プログレスバーを更新
+                    const progress = ((index + 1) / totalTabs) * 100;
+                    progressBar.style.width = `${progress}%`;
+
+                    // 全て完了したら
+                    if (index === totalTabs - 1) {
+                        setTimeout(() => {
+                            showMessage(`${processedCount}件のテキストを整形しました！`, 'success');
+                            showStats(processedCount);
+                            progressBar.style.width = '0%';
+                        }, 100);
+                    }
+                }, index * 50); // 50msずつ遅延させて並列処理感を演出
+            });
+        }
+
+        function processText(input, lineLength) {
             // 段落ごとに分割（空行で分割）
             const paragraphs = input.split(/\n\n+/);
 
@@ -262,16 +585,7 @@
                 return `<p>${htmlLines}</p>`;
             }).filter(p => p);
 
-            const output = formattedParagraphs.join('\n\n');
-
-            // 出力
-            document.getElementById('outputCode').textContent = output;
-
-            // プレビュー
-            document.getElementById('previewContent').innerHTML = output;
-            document.getElementById('preview').style.display = 'block';
-
-            showMessage('整形が完了しました！', 'success');
+            return formattedParagraphs.join('\n\n');
         }
 
         function splitIntoLines(text, targetLength) {
@@ -349,8 +663,8 @@
             return Math.min(targetLength, line.length);
         }
 
-        function copyToClipboard() {
-            const output = document.getElementById('outputCode').textContent;
+        function copyToClipboard(tabId) {
+            const output = document.getElementById(`output-${tabId}`).textContent;
 
             if (!output) {
                 showMessage('コピーする内容がありません', 'error');
@@ -364,11 +678,65 @@
             });
         }
 
-        function clearAll() {
-            document.getElementById('inputText').value = '';
-            document.getElementById('outputCode').textContent = '';
-            document.getElementById('preview').style.display = 'none';
+        function clearTab(tabId) {
+            document.getElementById(`input-${tabId}`).value = '';
+            document.getElementById(`output-${tabId}`).textContent = '';
+            document.getElementById(`preview-${tabId}`).style.display = 'none';
+
+            // タブデータを更新
+            const tab = tabs.find(t => t.id === tabId);
+            if (tab) {
+                tab.input = '';
+                tab.output = '';
+                tab.formatted = false;
+            }
+
             showMessage('クリアしました', 'success');
+        }
+
+        function exportAll() {
+            const formattedTabs = tabs.filter(t => t.formatted && t.output);
+
+            if (formattedTabs.length === 0) {
+                showMessage('エクスポートする整形済みテキストがありません', 'error');
+                return;
+            }
+
+            let exportText = '='.repeat(60) + '\n';
+            exportText += 'メールマガジン テキスト整形結果\n';
+            exportText += '='.repeat(60) + '\n\n';
+
+            formattedTabs.forEach((tab, index) => {
+                exportText += `【${tab.name}】\n`;
+                exportText += '-'.repeat(60) + '\n';
+                exportText += tab.output + '\n\n';
+            });
+
+            exportText += '='.repeat(60) + '\n';
+            exportText += `合計: ${formattedTabs.length}件\n`;
+            exportText += `生成日時: ${new Date().toLocaleString('ja-JP')}\n`;
+            exportText += '='.repeat(60);
+
+            navigator.clipboard.writeText(exportText).then(() => {
+                showMessage(`${formattedTabs.length}件のテキストをクリップボードにエクスポートしました！`, 'success');
+            }).catch(err => {
+                showMessage('エクスポートに失敗しました', 'error');
+            });
+        }
+
+        function showStats(count) {
+            const statsEl = document.getElementById('stats');
+            const statsContent = document.getElementById('statsContent');
+
+            const totalChars = tabs.reduce((sum, tab) => sum + (tab.input?.length || 0), 0);
+            const avgChars = totalChars / count;
+
+            statsContent.textContent = `処理件数: ${count}件 | 合計文字数: ${totalChars}文字 | 平均文字数: ${Math.round(avgChars)}文字`;
+            statsEl.style.display = 'block';
+
+            setTimeout(() => {
+                statsEl.style.display = 'none';
+            }, 10000);
         }
 
         function showMessage(text, type) {
@@ -380,16 +748,6 @@
                 messageEl.classList.remove('show');
             }, 3000);
         }
-
-        // サンプルテキストをロード（開発用）
-        window.addEventListener('DOMContentLoaded', () => {
-            const sample = `このテキストはメルマガ用ですので、一文が長すぎて意味が切れないように注意しながら改行してください。また、読者が読みやすいように工夫することも大切です。
-
-メールマガジンの配信では、テキストの見やすさが非常に重要になります。適切な改行を入れることで、読みやすさが格段に向上します。`;
-
-            // サンプルは入力しない（ユーザーが使いやすいように）
-            // document.getElementById('inputText').value = sample;
-        });
     </script>
 </body>
 </html>
